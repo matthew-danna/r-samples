@@ -1,0 +1,12 @@
+name: msf_chat_test
+title: msf_chat_test
+username: phantom-menace
+account: phantom-menace
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14739615
+bundleId: 10271934
+url: https://phantom-menace.shinyapps.io/msf_chat_test/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

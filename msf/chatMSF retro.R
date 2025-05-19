@@ -7,24 +7,26 @@
 #    http://shiny.rstudio.com/
 #    https://ellmer.tidyverse.org/
 
+
 library(shiny)
 library(shinychat)
 library(ellmer)
 
 # Define UI for application that draws a histogram
 ui <- bslib::page_fluid(
-  titlePanel("Crappy MSF Chatbot using Gemini"),
+  titlePanel("My First MSF Chatbot"),
+  "Ask this slightly-below-average model from late 2023 questions about MSF...",
   chat_ui("chat")
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-  chat.msf <- chat_gemini(
-    system_prompt = "You are a data scientist that has played the mobile game Marvel Strike Force since it's global launch",
-    turns = NULL,
-    base_url = "https://generativelanguage.googleapis.com/v1beta/",
-    api_key = Sys.getenv('GOOGLE_API_KEY'),
-    model = "gemini-2.0-flash",
+  chat.msf <- chat_github(
+    system_prompt = "You are a data scientist that uses statistics to make decisions and has played the mobile game Marvel Strike Force since it's global launch",
+    base_url = "https://models.inference.ai.azure.com/",
+    api_key = Sys.getenv('GITHUB_PAT'),
+    model = "gpt-4o",
+    seed = NULL,
     api_args = list(),
     echo = "all"
   )

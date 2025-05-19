@@ -26,7 +26,7 @@ chat.groq <- chat_groq(
   system_prompt = "You are a data scientist that uses statistics to make decisions and has played the mobile game Marvel Strike Force since it's global launch",
   turns = NULL,
   base_url = "https://api.groq.com/openai/v1",
-  api_key = Sys.getenv('OPENAI_API_KEY'),
+  api_key = Sys.getenv('GROQ_API_KEY'),
   model = "llama3-8b-8192",
   seed = NULL,
   api_args = list(),
@@ -46,4 +46,20 @@ chat.git <- chat_github(
 )
 
 live_console(chat.git)
+
+#### not working yet
+chat.openai <- chat_openai(
+  system_prompt = "You are a data scientist that uses statistics to make decisions and has played the mobile game Marvel Strike Force since it's global launch",
+  base_url = "https://api.openai.com/v1",
+  api_key = Sys.getenv('OPENAI_API_KEY'),
+  model = NULL,
+#  model = "gpt-4o",
+  seed = NULL,
+  api_args = list(),
+  echo = "all"
+)
+
+live_console(chat.openai)
+
+models_openai(base_url = "https://api.openai.com/v1", api_key = openai_key())
 

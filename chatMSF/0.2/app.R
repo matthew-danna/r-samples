@@ -1,4 +1,8 @@
-# literally nothing without this blog: https://3mw.albert-rapp.de/p/ai-chat-bots-with-r-shiny-elmer
+#####
+##### 0.2
+#####
+
+# literally nothing without this blog: https://3mw.albert-rapp.de/p/streaming-and-rendering-markdown
 
 library(shiny)
 library(gitcreds)
@@ -35,6 +39,20 @@ ui <- bslib::page_fluid(
       }'
     ),
     tags$style('.form-group {margin: 0px}'),
+    tags$script(
+      src = "https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"
+    ),
+    tags$script(HTML("
+      var chunks = '';
+      const md = markdownit();
+      Shiny.addCustomMessageHandler('newReply', function(chunk) {
+        chunks = '';
+      });
+      Shiny.addCustomMessageHandler('updateReply', function(chunk) {
+        chunks = chunks + chunk;
+        $('.chat_reply:last')[0].innerHTML = md.render(chunks);
+      });
+    ")),
     id = 'chat_container',
     style = htmltools::css(
       min_height = '600px',
@@ -127,13 +145,11 @@ server <- function(input, output, session) {
     )
     
     # stream response
+    new_msg <- TRUE
     coro::loop(for (chunk in stream) {
-      insertUI(
-        '.chat_reply:last',
-        where = 'beforeEnd',
-        ui = chunk,
-        immediate = TRUE
-      )
+      if (new_msg) session$sendCustomMessage("newReply", 1) # 1 = random msg
+      session$sendCustomMessage("updateReply", chunk)
+      new_msg <- FALSE
     })
   }) |> bindEvent(input$send_text)
 }

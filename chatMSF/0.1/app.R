@@ -1,3 +1,7 @@
+#####
+##### 0.1
+#####
+
 # literally nothing without this blog: https://3mw.albert-rapp.de/p/ai-chat-bots-with-r-shiny-elmer
 
 library(shiny)

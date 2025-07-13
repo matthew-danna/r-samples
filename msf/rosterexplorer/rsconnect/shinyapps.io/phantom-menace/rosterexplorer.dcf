@@ -1,0 +1,12 @@
+name: rosterexplorer
+title: rosterexplorer
+username: phantom-menace
+account: phantom-menace
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 15064620
+bundleId: 10608566
+url: https://phantom-menace.shinyapps.io/rosterexplorer/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

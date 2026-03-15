@@ -1,0 +1,39 @@
+source,target,group,type
+Cloak,Dagger,Dual Strike,synergy
+RocketRaccoon,Groot,Guardian Core,synergy
+Ikaris,Sersi,Eternal Loop,synergy
+RedHulk,Abomination,Gamma Combo,synergy
+Hulk,SheHulk,Gamma Combo,synergy
+Wolverine,X23,Weapon X Lineage,synergy
+Cyclops,JeanGrey,Phoenix Bond,synergy
+SpiderMan,SpiderManNoir,Spider-Verse,synergy
+SpiderMan,PeterBParker,Spider-Verse,synergy
+SpiderMan,PeniParker,Spider-Verse,synergy
+SymbioteSpiderMan,Venom,Symbiote Surge,synergy
+Venom,Carnage,Symbiote Surge,synergy
+Carnage,Scream,Symbiote Surge,synergy
+DoctorStrange,Wong,Mystic Protectors,synergy
+Thor,BetaRayBill,Asgardian Storm,synergy
+Loki,Sylvie,Variant Mischief,synergy
+Thanos,ThanosEndgame,Titan Legacy,synergy
+BlackPanther,Shuri,Wakandan Tech,synergy
+BlackPantherBC,BlackPantherShuri,Wakandan Tech,synergy
+CaptainAmerica,CaptainCarter,Shield Legacy,synergy
+CaptainAmerica,CaptainAmericaWW2,Shield Legacy,synergy
+IronMan,IronManInfinityWar,Armor Protocol,synergy
+IronMan,Hulkbuster,Armor Protocol,synergy
+Deadpool,PandaPool,Merc Mayhem,synergy
+GhostRider,GhostRiderRobbie,Spirit Riders,synergy
+ZombieIronMan,ZombieJuggernaut,Undead Alliance,synergy
+ZombieJuggernaut,ZombieScarletWitch,Undead Alliance,synergy
+OmegaSentinel,Sentinel,Mutant Hunt,synergy
+Nimrod,Sentinel,Mutant Hunt,synergy
+ScarletWitch,Vision,Hex-Core,synergy
+VivVision,Vision,Hex-Core,synergy
+StarLord,StarLord_Annihilation,Cosmic Rogue,synergy
+MrFantastic,InvisibleWoman,Fantastic Family,synergy
+MrFantastic,HumanTorch,Fantastic Family,synergy
+MrFantastic,Thing,Fantastic Family,synergy
+InvisibleWoman,HumanTorch,Fantastic Family,synergy
+InvisibleWoman,Thing,Fantastic Family,synergy
+HumanTorch,Thing,Fantastic Family,synergy

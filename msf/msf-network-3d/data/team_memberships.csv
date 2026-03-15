@@ -1,0 +1,236 @@
+character,group,type
+AdamWarlock,Infinity Watch,team
+Gamora,Infinity Watch,team
+Nebula,Infinity Watch,team
+Moondragon,Infinity Watch,team
+PhylaVell,Infinity Watch,team
+Thanos,Black Order,team
+EbonyMaw,Black Order,team
+CullObsidian,Black Order,team
+CorvusGlaive,Black Order,team
+ProximaMidnight,Black Order,team
+MorganLeFay,Darkhold,team
+AgathaHarkness,Darkhold,team
+ScarletWitch,Darkhold,team
+Wong,Darkhold,team
+StrangeSupreme,Darkhold,team
+Ikaris,Eternals,team
+Sersi,Eternals,team
+AntMan,Pym Tech,team
+Wasp,Pym Tech,team
+Yellowjacket,Pym Tech,team
+Ghost,Pym Tech,team
+Stature,Pym Tech,team
+IronMan,Power Armor,team
+WarMachine,Power Armor,team
+Rescue,Power Armor,team
+Ironheart,Power Armor,team
+Falcon,Power Armor,team
+IronManInfinityWar,Bionic Avengers,team
+Deathlok,Bionic Avengers,team
+VivVision,Bionic Avengers,team
+Hulkbuster,Bionic Avengers,team
+Vision,Bionic Avengers,team
+CaptainAmericaWW2,Rebirth,team
+WinterSoldier,Rebirth,team
+USAgent,Rebirth,team
+PeggyCarter,Rebirth,team
+UnionJack,Rebirth,team
+CaptainAmerica,Secret Avengers,team
+SamWilson,Secret Avengers,team
+MariaHill,Secret Avengers,team
+SharonCarter,Secret Avengers,team
+NickFury,Secret Avengers,team
+MsMarvel,Young Avengers,team
+SquirrelGirl,Young Avengers,team
+AmericaChavez,Young Avengers,team
+KateBishop,Young Avengers,team
+Echo,Young Avengers,team
+GhostSpider,Web Warriors,team
+ScarletSpider,Web Warriors,team
+SpiderMan,Web Warriors,team
+SpiderPunk,Web Warriors,team
+SpiderManPavitr,Web Warriors,team
+PeniParker,Spider Society,team
+PeterBParker,Spider Society,team
+SpiderManPavitr,Spider Society,team
+SpiderManNoir,Spider Society,team
+GhostSpider,Spider Society,team
+Venom,Symbiotes,team
+Carnage,Symbiotes,team
+Scream,Symbiotes,team
+AntiVenom,Symbiotes,team
+SymbioteSpiderMan,Symbiotes,team
+DoctorOctopus,Sinister Six,team
+Rhino,Sinister Six,team
+Mysterio,Sinister Six,team
+Shocker,Sinister Six,team
+Vulture,Sinister Six,team
+GreenGoblinGlider,Sinister Six,team
+Electro,Sinister Six,team
+Swarm,Sinister Six,team
+Lizard,Sinister Six,team
+KravenTheHunter,Sinister Six,team
+Cosmo,Knowhere,team
+Korg,Knowhere,team
+Nova,Knowhere,team
+Thor_InfinityWar,Knowhere,team
+StarLord_Annihilation,Knowhere,team
+StarLord,Guardians,team
+RocketRaccoon,Guardians,team
+Groot,Guardians,team
+Mantis,Guardians,team
+Drax,Guardians,team
+Daredevil,Shadowland,team
+Elektra,Shadowland,team
+MoonKnight,Shadowland,team
+NightNurse,Shadowland,team
+WhiteTiger,Shadowland,team
+ShangChi,Heroes for Hire,team
+ColleenWing,Heroes for Hire,team
+MistyKnight,Heroes for Hire,team
+LukeCage,Heroes for Hire,team
+IronFist,Heroes for Hire,team
+BlackPanther,Wakanda,team
+Shuri,Wakanda,team
+Okoye,Wakanda,team
+MBaku,Wakanda,team
+Killmonger,Wakanda,team
+BlackPantherBC,War Dogs,team
+BlackPantherShuri,War Dogs,team
+Okoye,War Dogs,team
+Nakia,War Dogs,team
+Killmonger,War Dogs,team
+Hulk,Gamma,team
+SheHulk,Gamma,team
+RedHulk,Gamma,team
+Abomination,Gamma,team
+AmadeusCho,Gamma,team
+Thor,Asgardians,team
+Loki,Asgardians,team
+Hela,Asgardians,team
+Heimdall,Asgardians,team
+Sif,Asgardians,team
+LokiTeen,Bifrost,team
+Sylvie,Bifrost,team
+Vahl,Bifrost,team
+BetaRayBill,Bifrost,team
+LokiTeen,Bifrost,team
+Cyclops,Uncanny X-Men,team
+Phoenix,Uncanny X-Men,team
+Colossus,Uncanny X-Men,team
+Storm,Uncanny X-Men,team
+Wolverine,Uncanny X-Men,team
+Jubilee,Astonishing X-Men,team
+Iceman,Astonishing X-Men,team
+KittyPryde,Astonishing X-Men,team
+Beast,Astonishing X-Men,team
+Bishop,Astonishing X-Men,team
+Rogue,Unlimited X-Men,team
+Gambit,Unlimited X-Men,team
+Dazzler,Unlimited X-Men,team
+Sunfire,Unlimited X-Men,team
+Fantomex,Unlimited X-Men,team
+Archangel,Deathseed,team
+Nemesis,Deathseed,team
+DarkBeast,Deathseed,team
+Magneto,Deathseed,team
+Psylocke,Deathseed,team
+Wolverine,Weapon X,team
+Sabretooth,Weapon X,team
+LadyDeathstrike,Weapon X,team
+SilverSamurai,Weapon X,team
+OmegaRed,Weapon X,team
+DoctorStrange,Secret Defenders,team
+MsMarvelClassic,Secret Defenders,team
+Photon,Secret Defenders,team
+BlackCat,Secret Defenders,team
+GhostRiderRobbie,Secret Defenders,team
+GhostRiderRobbie,Midnight Sons,team
+Morbius,Midnight Sons,team
+Blade,Midnight Sons,team
+ElsaBloodstone,Midnight Sons,team
+ManThing,Midnight Sons,team
+MrNegative,Underworld,team
+Kingpin,Underworld,team
+Taskmaster,Underworld,team
+GreenGoblinGlider,Underworld,team
+TheHood,Underworld,team
+KangTheConqueror,Masters of Evil,team
+Titania,Masters of Evil,team
+Moonstone,Masters of Evil,team
+AbsorbingMan,Masters of Evil,team
+Ultron,Masters of Evil,team
+NicoMinoru,A-Force,team
+CaptainMarvel,A-Force,team
+Photon,A-Force,team
+SpiderWoman,A-Force,team
+Tigra,A-Force,team
+Firestar,New Warriors,team
+Gwenpool,New Warriors,team
+Cloak,New Warriors,team
+Dagger,New Warriors,team
+Deathpool,New Warriors,team
+NickFury,S.H.I.E.L.D.,team
+MariaHill,S.H.I.E.L.D.,team
+Coulson,S.H.I.E.L.D.,team
+Quake,S.H.I.E.L.D.,team
+YoYo,S.H.I.E.L.D.,team
+VictoriaHand,S.H.I.E.L.D.,team
+RedSkull,Hydra,team
+Zemo,Hydra,team
+Crossbones,Hydra,team
+WinterSoldier,Hydra,team
+HydraDmg_AoE,Hydra,team
+HydraDmg_Buff,Hydra,team
+HydraDmg_Single,Hydra,team
+HydraSupport_Heal,Hydra,team
+HydraTank_Taunt,Hydra,team
+ScientistSupreme,A.I.M.,team
+Graviton,A.I.M.,team
+AimControl_Infect,A.I.M.,team
+AimDmg_Offense,A.I.M.,team
+AimDmg_Speed,A.I.M.,team
+AimSupport_Heal,A.I.M.,team
+AimTank_Taunt,A.I.M.,team
+Ronan,Kree,team
+Minerva,Kree,team
+Korath,Kree,team
+Ultimus,Kree,team
+KreeControl_Assist,Kree,team
+KreeDmg_Offense,Kree,team
+KreeDmg_Speed,Kree,team
+KreeSupport_HoT,Kree,team
+KreeTank_Counter,Kree,team
+Yondu,Ravagers,team
+StarLord,Ravagers,team
+RavagerDmg_AoE,Ravagers,team
+RavagerSupport_Heal,Ravagers,team
+RavagerTank_Taunt,Ravagers,team
+MrFantastic,Fantastic Four,team
+InvisibleWoman,Fantastic Four,team
+HumanTorch,Fantastic Four,team
+Thing,Fantastic Four,team
+Namor,Fantastic Four,team
+BlackBolt,Inhumans,team
+Crystal,Inhumans,team
+Karnak,Inhumans,team
+YoYo,Inhumans,team
+Quake,Inhumans,team
+TheLeader,Cabal,team
+IronPatriot,Cabal,team
+Namor,Cabal,team
+Sentinel,Orchis,team
+Nimrod,Orchis,team
+OmegaSentinel,Orchis,team
+LadyDeathstrike,Orchis,team
+Gladiator,Annihilators,team
+SilverSurfer,Annihilators,team
+Quasar,Annihilators,team
+BetaRayBill,Annihilators,team
+Ultimus,Annihilators,team
+Deadpool,Mercs for Money,team
+PandaPool,Mercs for Money,team
+HitMonkey,Mercs for Money,team
+OldManLogan,Mercs for Money,team
+Deathpool,Mercs for Money,team

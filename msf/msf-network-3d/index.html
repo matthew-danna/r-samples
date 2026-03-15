@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MSF Character Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="title-bar">
+        <div>
+          <p class="kicker">Marvel Strike Force</p>
+          <h1>Character Synergy Atlas</h1>
+        </div>
+        <div class="stats" id="networkStats">Loading...</div>
+      </header>
+
+      <main class="layout">
+        <aside class="panel controls">
+          <label for="searchInput">Find Character</label>
+          <input id="searchInput" type="search" placeholder="SpiderMan, Doom, Knull..." />
+
+          <label for="edgeDistance">Link Distance</label>
+          <input id="edgeDistance" type="range" min="20" max="180" value="78" />
+
+          <label for="chargeStrength">Node Repulsion</label>
+          <input id="chargeStrength" type="range" min="-250" max="-10" value="-88" />
+
+          <div class="toggles">
+            <label><input id="toggleTeam" type="checkbox" checked /> Team Links</label>
+            <label><input id="toggleSynergy" type="checkbox" checked /> Synergy Pairs</label>
+            <label><input id="toggleInferred" type="checkbox" checked /> Inferred Minion Links</label>
+          </div>
+
+          <button id="resetView">Reset Camera</button>
+          <p class="caption">Tip: drag nodes to isolate clusters and double-click empty space to recenter.</p>
+        </aside>
+
+        <section class="graph-wrap">
+          <div id="graph"></div>
+        </section>
+
+        <aside class="panel details">
+          <h2 id="detailTitle">Select A Character</h2>
+          <p id="detailBody">Click a node to inspect teams, pair synergies, and direct links.</p>
+          <div id="detailMeta"></div>
+        </aside>
+      </main>
+    </div>
+
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/three@0.164.1/build/three.min.js"></script>
+    <script src="https://unpkg.com/3d-force-graph@1.76.2/dist/3d-force-graph.min.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

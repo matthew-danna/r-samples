@@ -5,7 +5,7 @@ account: phantom-menace
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 14782660
-bundleId: 10987134
+bundleId: 11392775
 url: https://phantom-menace.shinyapps.io/chatMSF/
 version: 1
 asMultiple: FALSE

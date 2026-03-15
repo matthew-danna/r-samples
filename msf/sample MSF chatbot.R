@@ -1,5 +1,7 @@
 # MSF API: https://developer.marvelstrikeforce.com/beta/index.html
 
+# app creation guide: https://3mw.albert-rapp.de/p/streaming-and-rendering-markdown
+
 # https://ellmer.tidyverse.org/
 
 # github tokens

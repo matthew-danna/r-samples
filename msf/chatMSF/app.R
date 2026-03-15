@@ -1,220 +1,310 @@
 ##############################################################
-##  Chat MSF  —  Comic Book Edition  v0.4
-##  RAG: injects characters.csv + meta.csv into every prompt
+##  Chat MSF  —  Comic Book Edition  v0.3
+##  - CSVs fetched from GitHub at startup (no local files)
+##  - Token-efficient RAG: one ability per slot, compact stats
+##  - Larger fonts throughout
 ##############################################################
 
 library(shiny)
 library(ellmer)
 
-# ── 1.  Load & Stringify CSVs ────────────────────────────────────────────────
-#  Put your CSVs in the same folder as app.R (or adjust paths below).
-#  The entire content is embedded as plain text in the system prompt.
+# ── 1.  Fetch CSVs from GitHub ───────────────────────────────────────────────
+chars_url     <- "https://raw.githubusercontent.com/matthew-danna/r-samples/refs/heads/main/msf/msf_characters.csv"
+abilities_url <- "https://raw.githubusercontent.com/matthew-danna/r-samples/refs/heads/main/msf/msf_abilities_text.csv"
 
-read_csv_as_text <- function(path, label) {
-  if (!file.exists(path)) {
-    return(paste0("[", label, ": file not found at '", path, "']"))
+chars_df     <- read.csv(url(chars_url),     stringsAsFactors = FALSE, check.names = FALSE)
+abilities_df <- read.csv(url(abilities_url), stringsAsFactors = FALSE, check.names = FALSE)
+
+# Keep only the canonical 4 ability slots per character (no redundant upgrade rows)
+CANONICAL_SLOTS <- c("basic", "special", "ultimate", "passive")
+abilities_df <- abilities_df[abilities_df$ability_slot %in% CANONICAL_SLOTS, ]
+
+# Tag columns (Y/N team/trait membership)
+tag_cols  <- names(chars_df)[3:128]
+# Stat columns
+stat_cols <- c("power","health","damage","armor","focus","resist",
+               "crit damage","crit chance","speed","dodge chance",
+               "block chance","block amount","accuracy")
+
+# ── 2.  RAG helpers ──────────────────────────────────────────────────────────
+chars_lower    <- tolower(chars_df$character_name)
+chars_id_lower <- tolower(chars_df$character_id)
+tag_cols_lower <- tolower(tag_cols)
+
+match_characters <- function(query, max_chars = 6) {
+  q      <- tolower(query)
+  tokens <- unique(unlist(strsplit(q, "[^a-z0-9]+")))
+  tokens <- tokens[nchar(tokens) >= 3]
+  
+  matched_idx <- integer(0)
+  
+  for (tok in tokens) {
+    matched_idx <- union(matched_idx, which(grepl(tok, chars_lower,    fixed = TRUE)))
+    matched_idx <- union(matched_idx, which(grepl(tok, chars_id_lower, fixed = TRUE)))
   }
-  df  <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
-  hdr <- paste(names(df), collapse = " | ")
-  rows <- apply(df, 1, function(r) paste(r, collapse = " | "))
-  paste0(
-    "### ", label, "\n",
-    hdr, "\n",
-    paste(rows, collapse = "\n")
-  )
+  for (tok in tokens) {
+    tag_hit <- which(grepl(tok, tag_cols_lower, fixed = TRUE))
+    if (length(tag_hit) > 0) {
+      for (col in tag_cols[tag_hit]) {
+        matched_idx <- union(matched_idx, which(chars_df[[col]] == "Y"))
+      }
+    }
+  }
+  
+  if (length(matched_idx) == 0) return(character(0))
+  chars_df$character_id[head(matched_idx, max_chars)]
 }
 
-characters_text <- read_csv_as_text("/Users/matthewdanna/Downloads/msf_characters.csv", "Character Stats")
-meta_text       <- read_csv_as_text("/Users/matthewdanna/Downloads/msf_abilities_text.csv",        "Meta / Tier List / Abilities & Synergies")
+build_context <- function(char_ids) {
+  if (length(char_ids) == 0) return("")
+  
+  blocks <- lapply(char_ids, function(cid) {
+    row <- chars_df[chars_df$character_id == cid, , drop = FALSE]
+    if (nrow(row) == 0) return(NULL)
+    
+    name     <- row$character_name
+    tags_str <- paste(tag_cols[unlist(row[1, tag_cols]) == "Y"], collapse = ", ")
+    
+    # Compact stats: "power:1.2M | health:3.4M | damage:250K | speed:120 ..."
+    s <- as.numeric(unlist(row[1, stat_cols]))
+    names(s) <- stat_cols
+    fmt <- function(x) {
+      if (is.na(x)) return("?")
+      if (x >= 1e6) return(paste0(round(x/1e6, 1), "M"))
+      if (x >= 1e3) return(paste0(round(x/1e3,  1), "K"))
+      as.character(round(x))
+    }
+    stats_str <- paste(paste0(names(s), ":", sapply(s, fmt)), collapse=" | ")
+    
+    # One ability per slot
+    ab_rows <- abilities_df[abilities_df$character_id == cid, , drop = FALSE]
+    ab_str  <- if (nrow(ab_rows) > 0) {
+      paste(apply(ab_rows[match(CANONICAL_SLOTS, ab_rows$ability_slot), , drop = FALSE], 1,
+                  function(r) if (any(!is.na(r))) paste0("[", r["ability_slot"], "] ", r["ability_text"]) else NULL
+      ), collapse = "\n")
+    } else "(no ability data)"
+    
+    paste0("** ", name, " ** | Teams: ", tags_str, "\n",
+           "Stats: ", stats_str, "\n",
+           ab_str)
+  })
+  
+  paste(Filter(Negate(is.null), blocks), collapse = "\n\n")
+}
 
-system_prompt_text <- paste0(
-  "You are a veteran Marvel Strike Force strategist and data scientist who has played since global launch. ",
-  "You speak with confidence, use stats to back up your claims, and occasionally drop comic-book flavored flair. ",
-  "When answering questions, consult the datasets below first and cite specific numbers or tiers when relevant.\n\n",
-  "========== DATASET 1 ==========\n",
-  characters_text, "\n\n",
-  "========== DATASET 2 ==========\n",
-  meta_text, "\n\n",
-  "Always ground your answers in the data above. If the answer isn't in the data, say so clearly."
+# ── 3.  Effects glossary (hardcoded, always in system prompt) ─────────────────
+effects_glossary <- paste0(
+  "=== MSF STATUS EFFECTS GLOSSARY ===\n\n",
+  "-- BUFFS --\n",
+  "Offense Up: +50% damage dealt, +50% debuff application chance.\n",
+  "Defense Up: -50% incoming damage, +50% Resistance. Can be flipped against you.\n",
+  "Speed Up: Faster Speed Bar fill. Can be a liability vs flip-heavy teams.\n",
+  "Stealth: Untargetable unless last standing. AoE still hits. Breaks on buff-flip AoE.\n",
+  "Taunt: Forces all enemies to target this character. Some characters can ignore it.\n",
+  "Immunity: Blocks debuff application. Can be flipped, stolen, or stripped.\n",
+  "Regeneration: Heals % of max HP each turn. Stackable.\n",
+  "Deflect: Next attack misses entirely. Single use.\n",
+  "Counterattack: Auto basic-attacks when hit. Triggers on AoE; devastating when stacked.\n",
+  "Charged: Character-specific stacking mechanic (Thor, She-Hulk, Captain Marvel, etc). Triggers bonus effect at threshold.\n",
+  "Barrier: Absorbs damage before HP. Lasts until depleted.\n",
+  "Deathproof: Survives one lethal hit at 1 HP. Single use per application.\n",
+  "Evade: Next attack misses (dodge-based). Similar to Deflect.\n",
+  "Ability Energy: Grants charges toward special/ultimate ability.\n",
+  "Revive: Brings a defeated ally back at set HP%. Blocked by Trauma on the target.\n\n",
+  "-- DEBUFFS --\n",
+  "Bleed: Damage over time at turn start based on attacker's damage stat. Stackable.\n",
+  "Heal Block: Prevents all healing entirely. Stackable. Essential vs regen teams.\n",
+  "Ability Block: Target limited to basic attack only — no special, ultimate, or passive.\n",
+  "Stun: Target skips their turn. Disables passives (dodge, counterattack, assists).\n",
+  "Slow: Reduces Speed Bar fill rate. Hard counter to speed-reliant teams.\n",
+  "Offense Down: -50% damage dealt and -50% debuff application chance.\n",
+  "Defense Down: +50% damage taken. Stacks with Offense Up for massive burst.\n",
+  "Disrupt: Prevents target gaining any new buffs.\n",
+  "Blind: -100% Accuracy; attacks miss. Cyclops (200% accuracy) and Daredevil are immune.\n",
+  "Vulnerability: Target takes bonus damage; triggers Skirmisher ISO-8 buff removal on hit.\n",
+  "Trauma: Prevents revival if defeated while under this effect.\n",
+  "Drain: Reduces target's Speed Bar.\n",
+  "Burning/Poison/Frostbite: Damage over time variants tied to specific character kits. Stackable.\n",
+  "Ensnare/Web: Prevents Speed Bar gains; applied by Spider-Verse characters.\n",
+  "Fear: Forces basic attack only (similar to Ability Block, thematically distinct).\n",
+  "Suppressed: Disables passive ability activation.\n\n",
+  "-- UTILITY --\n",
+  "Flip: Converts buffs to debuffs or vice versa instead of removing them.\n",
+  "Clear Positive / Clear Negative: Removes all buffs or all debuffs from target.\n",
+  "Copy Positive: Copies all buffs from one character to another.\n",
+  "Fill Speed Bar: Advances a character's turn sooner.\n",
+  "Summon: Spawns a minion ally into battle.\n",
+  "=== END EFFECTS ==="
 )
 
-# ── 2.  UI ───────────────────────────────────────────────────────────────────
+# ── 4.  System prompt ─────────────────────────────────────────────────────────
+base_system_prompt <- paste0(
+  "You are AGENT ALPHA — a veteran Marvel Strike Force strategist and data scientist ",
+  "who has played since global launch. Cite specific stats, ability text, and effect definitions when relevant. ",
+  "Each user message may end with a DATA block from the MSF database — use it as your primary source. ",
+  "If no character data is present, answer from general MSF knowledge and say so. ",
+  "Format numbers with K/M suffixes. Keep answers punchy and focused.\n\n",
+  effects_glossary
+)
+
+# ── 4.  UI ────────────────────────────────────────────────────────────────────
 ui <- fluidPage(
   
-  # ── Google Fonts + Markdown-it ──
   tags$head(
-    tags$link(
-      rel  = "stylesheet",
-      href = "https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap"
-    ),
-    tags$script(
-      src = "https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"
-    ),
+    tags$link(rel = "stylesheet",
+              href = "https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:ital,wght@0,400;0,700;1,400&display=swap"),
+    tags$script(src = "https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"),
     
-    # ── Global Styles ──
     tags$style(HTML("
 
-      /* ── Page ── */
       body {
         background-color: #FFEB3B;
         background-image:
-          radial-gradient(circle, #E53935 1.5px, transparent 1.5px),
-          radial-gradient(circle, #E53935 1.5px, transparent 1.5px);
-        background-size: 24px 24px;
-        background-position: 0 0, 12px 12px;
+          radial-gradient(circle, #c62828 1.5px, transparent 1.5px),
+          radial-gradient(circle, #c62828 1.5px, transparent 1.5px);
+        background-size: 22px 22px;
+        background-position: 0 0, 11px 11px;
         font-family: 'Comic Neue', cursive;
-        margin: 0;
-        padding: 0;
+        font-size: 20px;
+        margin: 0; padding: 0;
       }
 
-      /* ── Outer wrapper ── */
       #comic_outer {
         max-width: 900px;
-        margin: 28px auto 40px auto;
+        margin: 24px auto 48px auto;
         border: 5px solid #111;
-        border-radius: 4px;
-        box-shadow: 8px 8px 0 #111;
+        border-radius: 3px;
+        box-shadow: 10px 10px 0 #111;
         background: #fff;
         overflow: hidden;
       }
 
       /* ── Title banner ── */
       #comic_title {
-        background: #E53935;
+        background: #c62828;
         border-bottom: 5px solid #111;
-        padding: 14px 22px 10px 22px;
+        padding: 14px 22px 12px 22px;
         display: flex;
-        align-items: baseline;
+        align-items: center;
         gap: 14px;
       }
       #comic_title h1 {
         font-family: 'Bangers', cursive;
-        font-size: 3rem;
-        letter-spacing: 3px;
+        font-size: 3.2rem;
+        letter-spacing: 4px;
         color: #FFEB3B;
         -webkit-text-stroke: 2px #111;
         text-shadow: 3px 3px 0 #111;
-        margin: 0;
-        line-height: 1;
+        margin: 0; line-height: 1;
       }
-      #comic_title .subtitle {
-        font-family: 'Comic Neue', cursive;
-        font-weight: 700;
-        font-size: 0.95rem;
-        color: #fff;
+      #comic_title .badge {
         background: #111;
-        padding: 2px 8px;
-        border-radius: 3px;
-        letter-spacing: 1px;
-        text-transform: uppercase;
+        color: #FFEB3B;
+        font-family: 'Bangers', cursive;
+        font-size: 1rem;
+        letter-spacing: 2px;
+        padding: 4px 12px;
+        border-radius: 2px;
       }
       #comic_title .issue {
         font-family: 'Bangers', cursive;
-        font-size: 1.2rem;
-        color: #FFEEB3;
+        font-size: 1.15rem;
+        color: #ffd54f;
         margin-left: auto;
         letter-spacing: 1px;
       }
 
-      /* ── Chat output panel ── */
+      /* ── Chat output ── */
       #chat_output {
-        height: 560px;
+        min-height: 500px;
+        max-height: 600px;
         overflow-y: auto;
-        padding: 18px 20px 10px 20px;
+        padding: 22px 24px 14px 24px;
         background: #FFFDE7;
         scrollbar-width: thin;
-        scrollbar-color: #E53935 #fff;
+        scrollbar-color: #c62828 #fff8e1;
       }
 
-      /* ── Panel divider ── */
+      /* ── Panel gutter ── */
       .panel-gutter {
-        height: 10px;
-        background: repeating-linear-gradient(
-          90deg,
-          #111 0px, #111 4px,
-          transparent 4px, transparent 20px
-        );
+        height: 8px;
+        background: repeating-linear-gradient(90deg, #111 0, #111 5px, transparent 5px, transparent 22px);
+        border-top: 3px solid #111;
+        border-bottom: 3px solid #111;
       }
 
-      /* ── AI bubble (speech balloon, left) ── */
+      /* ── AI bubble ── */
       .chat_reply {
         position: relative;
-        max-width: 72%;
+        max-width: 76%;
         background: #fff;
         border: 3px solid #111;
-        border-radius: 18px 18px 18px 4px;
-        padding: 12px 16px;
-        margin: 6px 0 18px 8px;
-        font-family: 'Comic Neue', cursive;
-        font-size: 1rem;
-        line-height: 1.55;
-        color: #111;
+        border-radius: 16px 16px 16px 3px;
+        padding: 12px 17px 16px 17px;
+        margin: 8px 0 26px 6px;
         box-shadow: 3px 3px 0 #111;
-        animation: popIn 0.25s cubic-bezier(.175,.885,.32,1.275) forwards;
+        animation: popIn 0.22s cubic-bezier(.175,.885,.32,1.275) forwards;
+        font-size: 1.25rem;
+        line-height: 1.65;
       }
-      /* tail */
       .chat_reply::before {
         content: '';
         position: absolute;
-        bottom: -13px;
-        left: 18px;
-        border-width: 12px 10px 0 0;
-        border-style: solid;
-        border-color: #111 transparent;
+        bottom: -14px; left: 16px;
+        border: 12px solid transparent;
+        border-top-color: #111;
+        border-right: 0; border-bottom: 0;
       }
       .chat_reply::after {
         content: '';
         position: absolute;
-        bottom: -9px;
-        left: 20px;
-        border-width: 10px 8px 0 0;
-        border-style: solid;
-        border-color: #fff transparent;
+        bottom: -10px; left: 18px;
+        border: 10px solid transparent;
+        border-top-color: #fff;
+        border-right: 0; border-bottom: 0;
       }
-      /* speaker label */
       .chat_reply .speaker {
-        font-family: 'Bangers', cursive;
-        font-size: 0.85rem;
-        letter-spacing: 1px;
-        color: #E53935;
-        margin-bottom: 4px;
         display: block;
+        font-family: 'Bangers', cursive;
+        font-size: 1.1rem;
+        letter-spacing: 2px;
+        color: #c62828;
+        margin-bottom: 6px;
       }
 
-      /* ── User bubble (thought balloon, right) ── */
+      /* ── User bubble ── */
       .chat_input {
         position: relative;
-        max-width: 65%;
+        max-width: 68%;
         background: #1565C0;
         border: 3px solid #111;
-        border-radius: 18px 18px 4px 18px;
-        padding: 12px 16px;
-        margin: 6px 8px 18px auto;
+        border-radius: 16px 16px 3px 16px;
+        padding: 12px 17px 16px 17px;
+        margin: 8px 6px 26px auto;
         font-family: 'Comic Neue', cursive;
-        font-size: 1rem;
+        font-size: 1.25rem;
         font-weight: 700;
-        line-height: 1.5;
         color: #fff;
         box-shadow: 3px 3px 0 #111;
-        animation: popIn 0.25s cubic-bezier(.175,.885,.32,1.275) forwards;
+        animation: popIn 0.22s cubic-bezier(.175,.885,.32,1.275) forwards;
+        line-height: 1.5;
+        word-break: break-word;
       }
       .chat_input::before {
         content: '';
         position: absolute;
-        bottom: -13px;
-        right: 18px;
-        border-width: 12px 0 0 10px;
-        border-style: solid;
-        border-color: #111 transparent;
+        bottom: -14px; right: 16px;
+        border: 12px solid transparent;
+        border-top-color: #111;
+        border-left: 0; border-bottom: 0;
       }
       .chat_input::after {
         content: '';
         position: absolute;
-        bottom: -9px;
-        right: 20px;
-        border-width: 10px 0 0 8px;
-        border-style: solid;
-        border-color: #1565C0 transparent;
+        bottom: -10px; right: 18px;
+        border: 10px solid transparent;
+        border-top-color: #1565C0;
+        border-left: 0; border-bottom: 0;
       }
 
       /* ── Input row ── */
@@ -222,147 +312,154 @@ ui <- fluidPage(
         display: flex;
         align-items: stretch;
         border-top: 5px solid #111;
-        background: #E53935;
+        background: #c62828;
+        min-height: 72px;
       }
-      #chat_input_row textarea {
+      #chat_input_row .shiny-input-container,
+      #chat_input_row .form-group {
+        margin: 0 !important;
         flex: 1;
+        width: auto !important;
+      }
+      #textarea_chat_input {
         border: none !important;
         border-right: 4px solid #111 !important;
         border-radius: 0 !important;
         background: #FFFDE7 !important;
         font-family: 'Comic Neue', cursive !important;
-        font-size: 1rem !important;
+        font-size: 1.25rem !important;
         font-weight: 700;
         color: #111 !important;
-        padding: 12px 14px !important;
+        padding: 14px 16px !important;
         resize: none;
-        outline: none;
+        outline: none !important;
         box-shadow: none !important;
+        min-height: 68px !important;
+        width: 100% !important;
       }
-      #chat_input_row textarea::placeholder {
-        color: #888;
-        font-style: italic;
+      #textarea_chat_input::placeholder {
+        color: #999; font-style: italic; font-weight: 400;
       }
       #send_text {
         font-family: 'Bangers', cursive !important;
-        font-size: 1.4rem !important;
+        font-size: 1.7rem !important;
         letter-spacing: 2px;
         color: #111 !important;
         background: #FFEB3B !important;
         border: none !important;
-        border-left: 0 !important;
         border-radius: 0 !important;
         width: 120px;
-        padding: 0 !important;
+        flex-shrink: 0;
         cursor: pointer;
-        transition: background 0.15s, transform 0.1s;
-        text-shadow: 1px 1px 0 #E53935;
+        transition: background 0.12s, transform 0.1s;
+        padding: 0 !important;
+        text-shadow: 1px 1px 0 rgba(198,40,40,0.35);
       }
-      #send_text:hover {
-        background: #fff176 !important;
-        transform: scale(1.04);
-      }
-      #send_text:active {
-        transform: scale(0.97);
+      #send_text:hover  { background: #fff176 !important; transform: scale(1.03); }
+      #send_text:active { transform: scale(0.97); }
+
+      /* ── Footer ── */
+      #comic_footer {
+        background: #111;
+        color: #FFEB3B;
+        font-family: 'Bangers', cursive;
+        font-size: 0.9rem;
+        letter-spacing: 3px;
+        text-align: center;
+        padding: 6px;
       }
 
-      /* ── Animations ── */
       @keyframes popIn {
-        from { opacity: 0; transform: scale(0.85) translateY(6px); }
+        from { opacity: 0; transform: scale(0.82) translateY(8px); }
         to   { opacity: 1; transform: scale(1)    translateY(0);   }
       }
 
-      /* ── Markdown inside bubbles ── */
-      .chat_reply p, .chat_input p { margin: 0 0 6px 0; }
-      .chat_reply ul, .chat_reply ol { margin: 4px 0 4px 20px; }
-      .chat_reply code {
-        background: #f5f5f5;
-        border: 1px solid #ccc;
-        border-radius: 3px;
-        padding: 1px 5px;
-        font-size: 0.9em;
+      /* ── Markdown in bubbles ── */
+      .bubble_content p  { margin: 0 0 6px 0; }
+      .bubble_content ul,
+      .bubble_content ol { margin: 5px 0 5px 20px; }
+      .bubble_content li { margin-bottom: 3px; }
+      .bubble_content code {
+        background: #f5f5f5; border: 1px solid #ddd;
+        border-radius: 3px; padding: 1px 5px; font-size: 0.9em;
       }
-      .chat_reply strong { color: #E53935; }
+      .bubble_content strong { color: #c62828; }
+      .bubble_content table  { border-collapse: collapse; font-size: 0.92em; margin: 7px 0; }
+      .bubble_content th, .bubble_content td { border: 1px solid #ccc; padding: 4px 10px; }
+      .bubble_content th { background: #fce4e4; }
 
-      /* ── Footer tag ── */
-      #comic_footer {
-        background: #111;
-        color: #FFEEB3;
-        font-family: 'Bangers', cursive;
-        font-size: 0.85rem;
-        letter-spacing: 2px;
-        text-align: center;
-        padding: 5px;
-      }
-
-      /* fix bslib/shiny form margin */
       .form-group { margin: 0 !important; }
-      .shiny-input-container { width: 100% !important; margin: 0 !important; }
     "))
   ),
   
-  # ── JS: streaming handler ──
   tags$script(HTML("
     var chunks = '';
     const md = markdownit();
-    Shiny.addCustomMessageHandler('newReply', function(chunk) {
-      chunks = '';
-    });
+
+    Shiny.addCustomMessageHandler('newReply', function(x) { chunks = ''; });
     Shiny.addCustomMessageHandler('updateReply', function(chunk) {
-      chunks = chunks + chunk;
-      var bubbles = document.querySelectorAll('.chat_reply');
-      var last = bubbles[bubbles.length - 1];
-      var content = last.querySelector('.bubble_content');
-      if (content) content.innerHTML = md.render(chunks);
+      chunks += chunk;
+      var bubbles = document.querySelectorAll('.chat_reply .bubble_content');
+      bubbles[bubbles.length - 1].innerHTML = md.render(chunks);
+      var out = document.getElementById('chat_output');
+      out.scrollTop = out.scrollHeight;
+    });
+    Shiny.addCustomMessageHandler('scrollDown', function(x) {
+      var out = document.getElementById('chat_output');
+      out.scrollTop = out.scrollHeight;
+    });
+    // Ctrl/Cmd+Enter to send
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        document.getElementById('send_text').click();
+      }
     });
   ")),
   
-  # ── Markup ──
   div(id = "comic_outer",
       
-      # Title bar
       div(id = "comic_title",
           tags$h1("CHAT MSF"),
-          span(class = "subtitle", "Marvel Strike Force Intel"),
-          span(class = "issue", "ISSUE #1")
+          span(class = "badge", "NOW WITH OPINIONS"),
+          span(class = "issue", "ISSUE #1  \u00b7  NOT ENDORSED BY SCOPELY")
       ),
       
-      # Chat output
       div(id = "chat_output",
-          # Opening bubble
           div(class = "chat_reply",
-              span(class = "speaker", "AGENT ALPHA"),
+              span(class = "speaker", "\u26a1 AGENT ALPHA"),
               div(class = "bubble_content",
-                  "Greetings, Commander! I'm your MSF tactical AI — powered by your character stats, ",
-                  "meta data, and abilities intel. Ask me anything about the roster, tier lists, or synergies!"
+                  tags$p(tags$strong("Greetings, Commander!")),
+                  tags$p("Wired into your MSF database — 363 characters, tier lists, and ability data."),
+                  tags$p("Ask about any character, team comp, or synergy. ",
+                         tags$em("Ctrl+Enter"), " to send fast.")
               )
           )
       ),
       
       div(class = "panel-gutter"),
       
-      # Input row
       div(id = "chat_input_row",
           textAreaInput(
             "textarea_chat_input",
-            label    = NULL,
-            width    = "100%",
-            height   = "68px",
-            resize   = "none",
-            placeholder = "Ask about a character, team synergy, or tier ranking..."
+            label       = NULL,
+            width       = "100%",
+            height      = "68px",
+            resize      = "none",
+            placeholder = "Ask about a character, team comp, synergy, or tier ranking..."
           ),
           actionButton("send_text", label = "SEND!")
       ),
       
-      div(id = "comic_footer", "POWERED BY MSF DATA · CLASSIFIED INTEL · NOT FOR PUBLIC RELEASE")
+      div(id = "comic_footer",
+          "BUILT BY the_notorious_md  \u00b7  DISCORD: the_notorious_md  \u00b7  PROBABLY WRONG ABOUT YOUR FAVES")
   )
 )
 
-# ── 3.  Server ───────────────────────────────────────────────────────────────
+# ── 5.  Server ────────────────────────────────────────────────────────────────
 server <- function(input, output, session) {
   
   chat <- ellmer::chat_github(
-    system_prompt = system_prompt_text,
+    system_prompt = base_system_prompt,
     base_url      = "https://models.inference.ai.azure.com/",
     api_key       = Sys.getenv("GITHUB_PAT"),
     model         = "gpt-4o",
@@ -372,31 +469,32 @@ server <- function(input, output, session) {
   )
   
   observe({
-    req(input$textarea_chat_input != "")
+    req(nchar(trimws(input$textarea_chat_input)) > 0)
     
     user_text <- input$textarea_chat_input
-    stream    <- chat$stream(user_text)
     
-    # Insert user bubble
-    insertUI(
-      "#chat_output", where = "beforeEnd",
-      ui = div(class = "chat_input", user_text),
-      immediate = TRUE
-    )
+    # RAG: find relevant characters, build compact context
+    matched_ids   <- match_characters(user_text, max_chars = 5)
+    context_block <- if (length(matched_ids) > 0) {
+      paste0("\n\n[MSF DATA — ", length(matched_ids), " character(s)]\n",
+             build_context(matched_ids))
+    } else {
+      "\n\n[No specific characters matched. Answer from general MSF knowledge.]"
+    }
     
+    stream <- chat$stream(paste0(user_text, context_block))
+    
+    insertUI("#chat_output", where = "beforeEnd",
+             ui = div(class = "chat_input", user_text), immediate = TRUE)
     updateTextAreaInput(inputId = "textarea_chat_input", value = "")
+    session$sendCustomMessage("scrollDown", list())
     
-    # Insert empty AI bubble
-    insertUI(
-      "#chat_output", where = "beforeEnd",
-      ui = div(class = "chat_reply",
-               span(class = "speaker", "AGENT ALPHA"),
-               div(class = "bubble_content", "")
-      ),
-      immediate = TRUE
-    )
+    insertUI("#chat_output", where = "beforeEnd",
+             ui = div(class = "chat_reply",
+                      span(class = "speaker", "\u26a1 AGENT ALPHA"),
+                      div(class = "bubble_content", "")
+             ), immediate = TRUE)
     
-    # Stream response into bubble
     new_msg <- TRUE
     coro::loop(for (chunk in stream) {
       if (new_msg) session$sendCustomMessage("newReply", 1)
@@ -404,14 +502,7 @@ server <- function(input, output, session) {
       new_msg <- FALSE
     })
     
-    # Auto-scroll to bottom
-    session$sendCustomMessage(
-      type    = "scrollDown",
-      message = list()
-    )
-    
   }) |> bindEvent(input$send_text)
 }
 
-# ── 4.  Run ───────────────────────────────────────────────────────────────────
 shinyApp(ui = ui, server = server)
